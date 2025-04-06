@@ -27,8 +27,15 @@ const videoSchema = new Schema(
     isPublished: { type: Boolean, default: true },
     owner: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Virtual populate: all comments linked to this video
+videoSchema.virtual("comments", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "video",
+});
 
 videoSchema.plugin(mongooseAggregatePaginate);
 
