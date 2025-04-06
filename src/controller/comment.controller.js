@@ -94,7 +94,7 @@ const updateComment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You are not allowed to update this comment");
   }
 
-  comment.content = `${comment.content} ${content.trim()}`;
+  comment.content = content.trim();
   await comment.save();
 
   return res
