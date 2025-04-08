@@ -39,6 +39,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   const videos = await Video.find(mongoQuery)
     .sort(sortOptions)
+    .select("title thumbnail duration")
     .skip((options.page - 1) * options.limit)
     .limit(options.limit)
     .populate("owner", "username avatar");
