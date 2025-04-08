@@ -10,6 +10,8 @@ const tweetSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    minlength: 1,
+    maxlength: 500,
   },
   { timestamps: true }
 );
