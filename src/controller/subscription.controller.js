@@ -8,16 +8,76 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   // TODO: toggle subscription
+
+  const userId = req.user._id;
+
+  // Prevent users from subscribing to themselves
+  if (channelId === String(userId)) {
+    throw new ApiError(400, "You cannot subscribe to your own channel");
+  }
+
+  const existingSubscription = await Subscription.findOne({
+    subscriber: userId,
+    channel: channelId,
+  });
+
+  if (!existingSubscription) {
+    await Subscription.create({
+      subscriber: userId,
+      channel: channelId,
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Channel subscribed successfully"));
+  } else {
+    await Subscription.findByIdAndDelete(existingSubscription._id);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Channel unsubscribed successfully"));
+  }
 });
 
-// controller to return subscriber list of a channel
-const getUserChannelSubscribers = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
-});
-
-// controller to return channel list to which user has subscribed
+// controller for getting all the subscribed channels
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+  const subscribedChannels = await Subscription.find({
+    subscriber: subscriberId,
+  })
+    .skip(skip)
+    .limit(limit)
+    .populate("channel", "username avatar");
+
+  const channels = subscribedChannels.map((sub) => sub.channel);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channels, "subscribed channels fetched successfully")
+    );
 });
 
-export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
+// controller for getting subscriber count
+const getsubscriberCount = asyncHandler(async (req, res) => {
+  const { channelId } = req.params;
+
+  const subscriberCount = await Subscription.countDocuments({
+    channel: channelId,
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        subscriberCount,
+        "Subscriber count fetched successfully"
+      )
+    );
+});
+
+export { toggleSubscription, getsubscriberCount, getSubscribedChannels };
