@@ -5,13 +5,13 @@ const tweetSchema = new Schema(
     content: {
       type: String,
       required: true,
+      minlength: 1, // ✅ now correctly placed
+      maxlength: 500,
     },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    minlength: 1,
-    maxlength: 500,
   },
   { timestamps: true }
 );
