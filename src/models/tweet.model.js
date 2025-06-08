@@ -5,7 +5,7 @@ const tweetSchema = new Schema(
     content: {
       type: String,
       required: true,
-      minlength: 1, // ✅ now correctly placed
+      minlength: 1,
       maxlength: 500,
     },
     owner: {
