@@ -8,6 +8,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
 
   //TODO: create playlist
+  console.log(name, description);
 
   if (!name || !description) {
     throw new ApiError(400, "All fields are required");
@@ -32,6 +33,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     owner: userId,
   }).select("_id name");
 
+  console.log(userId, playlists);
   return res
     .status(200)
     .json(
@@ -50,7 +52,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
   //TODO: get playlist by id
   const playlistVideos = await Playlist.findById(playlistId)
     .populate("videos", "_id title thumbnail views createdAt duration")
-    .select("_id title description videos ");
+    .select("_id name description videos ");
 
   return res
     .status(200)
