@@ -12,7 +12,7 @@ const createTweet = asyncHandler(async (req, res) => {
   if (!userId) {
     throw new ApiError(401, "Unauthorized: User not found");
   }
-  const { content } = req.body;
+  let { content } = req.body;
 
   if (!content) {
     throw new ApiError(400, "Content is required");
