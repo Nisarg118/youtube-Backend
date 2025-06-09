@@ -52,6 +52,7 @@ const likeCounts = asyncHandler(async (req, res) => {
   const { targetType } = req.body;
 
   let targetDoc;
+
   if (!targetType) {
     throw new ApiError(404, "targetType doesn't exist");
   }
@@ -89,7 +90,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
   const videoIds = likedVideoDocs.map((like) => like.targetId);
 
   const videos = await Video.find({ _id: { $in: videoIds } }).select(
-    "title thumbnail views owner createdAt"
+    "title duration thumbnail views owner createdAt"
   );
 
   return res
