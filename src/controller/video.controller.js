@@ -10,6 +10,53 @@ import {
 } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    query,
+    sortBy = "createdAt",
+    sortType = "desc",
+  } = req.query;
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(limit),
+  };
+
+  const mongoQuery = {};
+
+  if (query) {
+    mongoQuery.$or = [
+      { title: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+    ];
+  }
+
+  const sortOptions = {};
+  sortOptions[sortBy] = sortType === "asc" ? 1 : -1;
+
+  const videos = await Video.find(mongoQuery)
+    .sort(sortOptions)
+    .select("title thumbnail duration views createdAt")
+    .skip((options.page - 1) * options.limit)
+    .limit(options.limit)
+    .populate("owner", "username avatar");
+
+  const total = await Video.countDocuments(mongoQuery);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videos,
+        pagination: { total, page: options.page, limit: options.limit },
+      },
+      "Videos fetched successfully"
+    )
+  );
+});
+
+const getAllVideosOfChannel = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType } = req.query;
   //TODO: get all videos based on query, sort, pagination
   const { userId } = req.params;
@@ -232,6 +279,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 export {
   getAllVideos,
+  getAllVideosOfChannel,
   publishAVideo,
   getVideoById,
   updateVideo,

@@ -1,17 +1,18 @@
 import { Router } from "express";
 import {
   deleteVideo,
-  getAllVideos,
+  getAllVideosOfChannel,
   getVideoById,
   publishAVideo,
   togglePublishStatus,
   updateVideo,
+  getAllVideos,
 } from "../controller/video.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
-router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
+router.route("/").get(getAllVideos);
 
 router.route("/").post(
   upload.fields([
@@ -24,16 +25,17 @@ router.route("/").post(
       maxCount: 1,
     },
   ]),
+  verifyJWT,
   publishAVideo
 );
 
-router.route("/u/:userId").get(getAllVideos);
+router.route("/u/:userId").get(verifyJWT, getAllVideosOfChannel);
 router
   .route("/:videoId")
-  .get(getVideoById)
-  .delete(deleteVideo)
-  .patch(upload.single("thumbnail"), updateVideo);
+  .get(verifyJWT, getVideoById)
+  .delete(verifyJWT, deleteVideo)
+  .patch(upload.single("thumbnail"), verifyJWT, updateVideo);
 
-router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
+router.route("/toggle/publish/:videoId").patch(verifyJWT, togglePublishStatus);
 
 export default router;
