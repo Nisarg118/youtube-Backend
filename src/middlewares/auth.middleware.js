@@ -6,13 +6,13 @@ import { User } from "../models/user.model.js";
 export const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
     const authHeader = req.header("Authorization");
-
+    console.log(authHeader);
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       throw new ApiError(401, "Unauthorized: No or malformed token provided");
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
-
+    console.log(token);
     if (!token) {
       throw new ApiError(401, "Unauthorized request");
     }

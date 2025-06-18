@@ -51,10 +51,13 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already exists");
   }
 
+  console.log(req.files);
   const avatarLocalPath = req.files?.avatar[0]?.path;
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is required");
+    return res
+      .status(400)
+      .json(new ApiResponse(400, null, "Avatar file is required"));
   }
 
   let coverImageLocalPath;
@@ -68,12 +71,13 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  console.log(avatar, coverImage);
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const user = await User.create({
+  await User.create({
     fullName,
     avatar: avatar.url,
     coverImage: coverImage?.url || "",
@@ -82,17 +86,9 @@ const registerUser = asyncHandler(async (req, res) => {
     username: username.toLowerCase(),
   });
 
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registering user");
-  }
-
   return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    .json(new ApiResponse(201, {}, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -197,7 +193,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: false,
     };
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
@@ -208,19 +204,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
     console.log(refreshToken);
-    return res
-      .status(200)
-      .cookie("refreshToken", refreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            accessToken,
-            refreshToken: refreshToken,
-          },
-          "Access token refreshed successfully"
-        )
-      );
+    return res.status(200).cookie("refreshToken", refreshToken, options).json(
+      new ApiResponse(
+        200,
+        {
+          accessToken,
+        },
+        "Access token refreshed successfully"
+      )
+    );
   } catch (error) {
     throw new ApiError(401, error.message || "Invalid refresh token");
   }

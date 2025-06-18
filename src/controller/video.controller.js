@@ -85,8 +85,7 @@ const getAllVideosOfChannel = asyncHandler(async (req, res) => {
     .sort(sortOptions)
     .select("title thumbnail duration")
     .skip((options.page - 1) * options.limit)
-    .limit(options.limit)
-    .populate("owner", "username avatar");
+    .limit(options.limit);
 
   const total = await Video.countDocuments(mongoQuery);
   return res.status(200).json(
