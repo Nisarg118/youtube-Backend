@@ -83,7 +83,7 @@ const getAllVideosOfChannel = asyncHandler(async (req, res) => {
 
   const videos = await Video.find(mongoQuery)
     .sort(sortOptions)
-    .select("title thumbnail duration")
+    .select("title thumbnail duration views createdAt")
     .skip((options.page - 1) * options.limit)
     .limit(options.limit);
 
@@ -173,29 +173,37 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You are not authorized to update this video");
   }
 
-  const thumbnailLocalPath = req.file?.path;
-  if (!thumbnailLocalPath) {
-    throw new ApiError(400, "Thumbnail file is missing");
-  }
+  let oldPublicId = null;
 
-  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-  if (!thumbnail.url) {
-    throw new ApiError(400, "Error uploading thumbnail to Cloudinary");
-  }
+  let thumbnailLocalPath = null;
+  if (req.file?.path) {
+    thumbnailLocalPath = req.file?.path;
+    if (!thumbnailLocalPath) {
+      throw new ApiError(400, "Thumbnail file is missing");
+    }
+    oldPublicId = video.cloudinary_thumbnail_id;
 
-  const oldPublicId = video.cloudinary_thumbnail_id;
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    console.log("Cloudinary Response:", thumbnail);
+
+    if (!thumbnail.url) {
+      throw new ApiError(400, "Error uploading thumbnail to Cloudinary");
+    }
+
+    video.thumbnail = thumbnail.url;
+    video.cloudinary_thumbnail_id = thumbnail.public_id;
+  }
 
   if (title) video.title = title;
   if (description) video.description = description;
-  video.thumbnail = thumbnail.url;
-  video.cloudinary_thumbnail_id = thumbnail.public_id;
 
   await video.save();
 
-  const deleteThumbnail = await deleteFromCloudinary(oldPublicId);
-  if (!deleteThumbnail || deleteThumbnail.result !== "ok") {
-    console.warn("⚠️ Warning: Old thumbnail not deleted from Cloudinary");
-    // optional: don't throw error if upload succeeded
+  if (oldPublicId) {
+    const deleteThumbnail = await deleteFromCloudinary(oldPublicId);
+    if (!deleteThumbnail || deleteThumbnail.result !== "ok") {
+      console.warn("Warning: Old thumbnail not deleted from Cloudinary");
+    }
   }
 
   return res.status(200).json(

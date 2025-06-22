@@ -31,6 +31,7 @@ const videoSchema = new Schema(
       type: String,
       required: true,
     },
+    tags: [{ type: String }],
     views: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: true },
     owner: [{ type: Schema.Types.ObjectId, ref: "User" }],
