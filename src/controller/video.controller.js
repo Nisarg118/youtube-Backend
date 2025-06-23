@@ -167,7 +167,6 @@ const getVideoById = asyncHandler(async (req, res) => {
     isSubscribed = !!subExists;
   }
 
-  console.log(isSubscribed);
   return res
     .status(200)
     .json(

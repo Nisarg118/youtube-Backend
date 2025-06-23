@@ -52,22 +52,61 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller for getting all the subscribed channels
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
-  const subscribedChannels = await Subscription.find({
-    subscriber: userId,
-  })
-    .skip(skip)
-    .limit(limit)
-    .populate("channel", "username avatar");
 
-  const channels = subscribedChannels.map((sub) => sub.channel);
+  const subscribedChannels = await Subscription.aggregate([
+    {
+      $match: { subscriber: userId },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channel",
+        pipeline: [
+          {
+            $lookup: {
+              from: "subscriptions",
+              localField: "_id",
+              foreignField: "channel",
+              as: "subscribers",
+            },
+          },
+          {
+            $addFields: {
+              subscribersCount: { $size: "$subscribers" },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              fullName: 1,
+              username: 1,
+              avatar: 1,
+              subscribersCount: 1,
+            },
+          },
+        ],
+      },
+    },
+    { $unwind: "$channel" }, // flatten channel from array
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+
+  const channels = subscribedChannels.map((s) => s.channel);
+
   return res
     .status(200)
     .json(
-      new ApiResponse(200, channels, "subscribed channels fetched successfully")
+      new ApiResponse(
+        200,
+        channels,
+        "Subscribed channels fetched successfully with subscribers count"
+      )
     );
 });
 
