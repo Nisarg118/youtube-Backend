@@ -27,13 +27,25 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Channel subscribed successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          { isSubscribed: true },
+          "Channel subscribed successfully"
+        )
+      );
   } else {
     await Subscription.findByIdAndDelete(existingSubscription._id);
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Channel unsubscribed successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          { isSubscribed: false },
+          "Channel unsubscribed successfully"
+        )
+      );
   }
 });
 

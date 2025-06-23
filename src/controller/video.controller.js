@@ -1,3 +1,4 @@
+import { Subscription } from "../models/subscription.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -147,7 +148,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
-  console.log(videoId);
   const video = await Video.findById(videoId)
     .select("-isPublished -duration")
     .populate("owner", "username avatar");
@@ -156,10 +156,27 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Video not found");
   }
 
-  console.log("Video : ", video);
+  let isSubscribed = false;
+  const userId = req.user?._id;
+
+  if (userId && video.owner[0]?._id) {
+    const subExists = await Subscription.exists({
+      subscriber: req.user._id,
+      channel: video.owner[0]._id,
+    });
+    isSubscribed = !!subExists;
+  }
+
+  console.log(isSubscribed);
   return res
     .status(200)
-    .json(new ApiResponse(200, video, "Video fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { video, isSubscribed },
+        "Video fetched successfully"
+      )
+    );
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
