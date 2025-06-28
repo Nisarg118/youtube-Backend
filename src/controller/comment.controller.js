@@ -6,15 +6,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
-  //TODO: get all comments for a video
   const { videoId } = req.params;
 
-  const options = {
-    page: parseInt(req.query.page) || 1,
-    limit: parseInt(req.query.limit) || 10,
-  };
-
-  const commentsAggregateQuery = Comment.aggregate([
+  const comments = await Comment.aggregate([
     { $match: { video: new mongoose.Types.ObjectId(videoId) } },
     {
       $lookup: {
@@ -24,9 +18,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         as: "owner",
       },
     },
-    {
-      $unwind: "$owner",
-    },
+    { $unwind: "$owner" },
     { $sort: { createdAt: -1 } }, // Newest first
     {
       $project: {
@@ -38,20 +30,13 @@ const getVideoComments = asyncHandler(async (req, res) => {
     },
   ]);
 
-  const paginatedComments = await Comment.aggregatePaginate(
-    commentsAggregateQuery,
-    options
-  );
-
-  if (!paginatedComments || !paginatedComments.docs.length) {
-    throw new ApiError(404, "Paginated comments not found");
+  if (!comments || !comments.length) {
+    throw new ApiError(404, "No comments found");
   }
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, paginatedComments, "Comment fetched successfully")
-    );
+    .json(new ApiResponse(200, comments, "Comments fetched successfully"));
 });
 
 const addComment = asyncHandler(async (req, res) => {
@@ -65,15 +50,17 @@ const addComment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Comment not found");
   }
   const user = req.user;
-  await Comment.create({
+  const comment = await Comment.create({
     content,
     owner: user._id,
     video: videoId,
   });
+  await comment.populate("owner", "username avatar"); // ✅ this line is mandatory
 
+  console.log(comment);
   return res
     .status(201)
-    .json(new ApiResponse(201, "comment added successfully"));
+    .json(new ApiResponse(201, comment, "comment added successfully"));
 });
 
 const updateComment = asyncHandler(async (req, res) => {
