@@ -65,7 +65,7 @@ const addComment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Comment not found");
   }
   const user = req.user;
-  const comment = await Comment.create({
+  await Comment.create({
     content,
     owner: user._id,
     video: videoId,

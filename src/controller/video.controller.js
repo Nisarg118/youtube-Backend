@@ -1,3 +1,4 @@
+import { Like } from "../models/like.model.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -166,13 +167,23 @@ const getVideoById = asyncHandler(async (req, res) => {
     });
     isSubscribed = !!subExists;
   }
+  let isLikedByCurrentUser = false;
+
+  if (userId) {
+    const likeExists = await Like.exists({
+      targetType: "video",
+      targetId: videoId,
+      likedBy: userId,
+    });
+    isLikedByCurrentUser = !!likeExists;
+  }
 
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { video, isSubscribed },
+        { video, isSubscribed, isLikedByCurrentUser },
         "Video fetched successfully"
       )
     );
